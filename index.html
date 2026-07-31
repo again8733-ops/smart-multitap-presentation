@@ -99,8 +99,8 @@ canvas.bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 
 /* Biz/Savings */
 .slide-biz{background:linear-gradient(135deg,#0b1a2e,#162d50);padding-bottom:16vh}
-.save-scenarios{display:flex;gap:clamp(8px,1vw,14px);margin-bottom:clamp(10px,1.5vh,16px);flex-wrap:wrap;justify-content:center;z-index:2}
-.scenario{display:flex;align-items:center;gap:clamp(8px,1vw,12px);border:1px solid rgba(0,180,255,.2);border-radius:12px;padding:clamp(10px,1.5vh,14px) clamp(12px,1.5vw,20px);background:rgba(255,255,255,.04);flex:1;min-width:clamp(180px,20vw,240px)}
+.save-scenarios{display:flex;gap:clamp(6px,.8vw,12px);margin-bottom:clamp(8px,1vh,12px);flex-wrap:wrap;justify-content:center;z-index:2}
+.scenario{display:flex;align-items:center;gap:clamp(8px,1vw,12px);border:1px solid rgba(0,180,255,.2);border-radius:12px;padding:clamp(8px,1vh,12px) clamp(12px,1.5vw,20px);background:rgba(255,255,255,.04);flex:1;min-width:clamp(180px,20vw,240px)}
 .scenario-icon{font-size:clamp(24px,2.2vw,36px)}
 .scenario-title{font-size:clamp(12px,1.1vw,16px);color:rgba(255,255,255,.7);margin-bottom:4px}
 .scenario-detail{font-size:clamp(14px,1.2vw,18px);line-height:1.6}
@@ -108,8 +108,8 @@ canvas.bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 .scenario-total{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05)}
 .scenario-total .scenario-title{color:#ffd700;font-weight:700}
 .scenario-total .scenario-detail strong{color:#ffd700}
-.price-row{display:flex;gap:clamp(8px,1vw,16px);margin-bottom:clamp(10px,1.5vh,20px);z-index:2;flex-wrap:wrap;justify-content:center}
-.price-item{border-radius:12px;padding:clamp(10px,1.5vh,16px) clamp(12px,1.5vw,20px);min-width:clamp(140px,15vw,180px);flex:1;text-align:center}
+.price-row{display:flex;gap:clamp(6px,.8vw,12px);margin-bottom:clamp(8px,1vh,12px);z-index:2;flex-wrap:wrap;justify-content:center}
+.price-item{border-radius:12px;padding:clamp(8px,1vh,12px) clamp(12px,1.5vw,20px);min-width:clamp(140px,15vw,180px);flex:1;text-align:center}
 .price-main{border:1px solid rgba(0,180,255,.3);background:rgba(0,180,255,.08)}
 .price-roi{border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.06)}
 .price-profit{border:1px solid rgba(81,207,102,.3);background:rgba(81,207,102,.06)}
@@ -117,8 +117,8 @@ canvas.bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 .price-num{font-size:clamp(22px,2vw,32px);font-weight:700}
 .price-main .price-num{color:#00d4ff}.price-roi .price-num{color:#ffd700}.price-profit .price-num{color:#51cf66}
 .price-detail{font-size:clamp(10px,.8vw,13px);color:rgba(255,255,255,.6);margin-top:4px}
-.save-benefits{display:flex;gap:clamp(6px,.8vw,12px);flex-wrap:wrap;justify-content:center;z-index:2}
-.benefit-item{border:1px solid rgba(255,215,0,.2);border-radius:10px;padding:clamp(6px,.8vh,10px) clamp(12px,1.5vw,20px);background:rgba(255,215,0,.05);color:#ffd700;font-size:clamp(11px,1vw,15px)}
+.save-benefits{display:flex;gap:clamp(4px,.6vw,10px);flex-wrap:wrap;justify-content:center;z-index:2}
+.benefit-item{border:1px solid rgba(255,215,0,.2);border-radius:10px;padding:clamp(5px,.6vh,8px) clamp(12px,1.5vw,20px);background:rgba(255,215,0,.05);color:#ffd700;font-size:clamp(11px,1vw,15px)}
 .benefit-icon{margin-right:6px}
 
 /* Invest */
@@ -770,16 +770,39 @@ function triggerFlashEl(el,grad){if(!el)return;el.style.background=grad;el.class
     ctx.fillStyle="rgba(255,200,50,.95)";ctx.font="700 "+Math.max(11,Math.round(Math.min(w,h)*0.014))+"px Pretendard,sans-serif";
     ctx.fillText("대기전력 낭비 ↑",wasteX(),busY()-lim()-12);
 
-    const mw=Math.min(w*0.4,420),mh=Math.min(h*0.05,26),mx=w/2-mw/2,my=h*0.92;
-    ctx.fillStyle="rgba(255,255,255,.08)";rr(ctx,mx,my,mw,mh,6);ctx.fill();
-    ctx.fillStyle="rgba(255,200,50,.85)";rr(ctx,mx,my,mw*LEAK,mh,6);ctx.fill();
-    ctx.fillStyle="rgba(140,220,255,.5)";rr(ctx,mx+mw*LEAK,my,mw*(1-LEAK),mh,6);ctx.fill();
-    ctx.fillStyle="rgba(255,255,255,.7)";ctx.font="12px Pretendard,sans-serif";
-    ctx.fillText("가정·업무용 전력 중 대기전력 비중 10~11% (한국에너지공단)",w/2,my-10);
-
     ctx.fillStyle="rgba(255,215,0,.95)";ctx.font="900 "+Math.max(16,Math.round(Math.min(w,h)*0.02))+"px Pretendard,sans-serif";
     ctx.fillText("연간 대기전력 낭비  약 "+Math.round(wasted).toLocaleString()+"억원  (한국전기연구원)",w*0.5,h*0.11);
     if(wasted>4200)wasted=0;
+
+    if(w>860&&h>540){
+      ctx.textAlign="center";
+      const dcx=w*0.15,dcy=h*0.45,dr=Math.min(w*0.06,h*0.13),lw=Math.max(10,dr*0.22);
+      const sa=-Math.PI/2,sb=-Math.PI/2+Math.PI*2*LEAK;
+      ctx.beginPath();ctx.arc(dcx,dcy,dr,0,Math.PI*2);ctx.strokeStyle="rgba(56,189,248,.8)";ctx.lineWidth=lw;ctx.stroke();
+      ctx.beginPath();ctx.arc(dcx,dcy,dr,sa,sb);ctx.strokeStyle="rgba(255,200,50,.95)";ctx.lineWidth=lw;ctx.stroke();
+      ctx.fillStyle="#fff";ctx.font="700 "+Math.max(16,Math.round(dr*0.4))+"px Pretendard,sans-serif";
+      ctx.fillText("10~11%",dcx,dcy);
+      ctx.fillStyle="rgba(255,200,50,.95)";ctx.font="700 12px Pretendard,sans-serif";
+      ctx.fillText("대기전력 비중",dcx,dcy+dr+16);
+      ctx.fillStyle="rgba(255,255,255,.55)";ctx.font="11px Pretendard,sans-serif";
+      ctx.fillText("가정·업무용 전력 중 대기전력 비중",dcx,dcy+dr+32);
+      ctx.fillStyle="rgba(255,255,255,.4)";ctx.font="10px Pretendard,sans-serif";
+      ctx.fillText("(한국에너지공단)",dcx,dcy+dr+46);
+
+      const gx=w*0.85,gy=h*0.42,gh=Math.min(h*0.24,170),gw=Math.min(w*0.06,64);
+      const gp=Math.min(wasted/4000,1);
+      ctx.fillStyle="rgba(255,255,255,.06)";rr(ctx,gx-gw/2,gy-gh,gw,gh,8);ctx.fill();
+      const gg=ctx.createLinearGradient(0,gy,0,gy-gh);
+      gg.addColorStop(0,"rgba(255,215,0,.95)");gg.addColorStop(1,"rgba(255,180,40,.35)");
+      ctx.fillStyle=gg;rr(ctx,gx-gw/2,gy-gh*gp,gw,gh*gp,8);ctx.fill();
+      ctx.fillStyle="rgba(255,215,0,.4)";ctx.font="10px Pretendard,sans-serif";
+      ctx.fillText("목표 4,000억원",gx,gy-gh-6);
+      ctx.fillStyle="rgba(255,215,0,.95)";ctx.font="700 12px Pretendard,sans-serif";
+      ctx.fillText("연간 대기전력 낭비액",gx,gy+16);
+      ctx.fillStyle="rgba(255,255,255,.4)";ctx.font="10px Pretendard,sans-serif";
+      ctx.fillText("(한국전기연구원)",gx,gy+30);
+      ctx.textAlign="left";
+    }
     ctx.textAlign="left";
     stepBurst(ctx,bursts,dt,"255,200,50");
     requestAnimationFrame(frame);
@@ -855,6 +878,30 @@ function triggerFlashEl(el,grad){if(!el)return;el.style.background=grad;el.class
         for(let i=drops.length-1;i>=0;i--){const p=drops[i];p.y-=p.vy*dt;if(p.y<r.top+10){drops.splice(i,1);continue;}ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fillStyle="rgba(34,221,136,.7)";ctx.fill();}
       }
     }
+    if(h>560){
+      const cw=Math.min(w*0.5,680),cx0=w/2-cw/2,cy0=Math.min(h*0.86,h-80),ch=Math.min(h*0.07,46);
+      const base=cy0-ch,offStart=(9/12)*cw,offW=cw/12;
+      ctx.textAlign="center";
+      ctx.fillStyle="rgba(255,255,255,.04)";rr(ctx,cx0,base,cw,ch,6);ctx.fill();
+      ctx.fillStyle="rgba(255,120,120,.09)";ctx.fillRect(cx0+offStart,base,offW,ch);
+      ctx.fillStyle="rgba(255,107,107,.7)";ctx.font="700 10px Pretendard,sans-serif";
+      ctx.fillText("외출 자동 OFF",cx0+offStart+offW/2,base-4);
+      ctx.beginPath();
+      for(let i=0;i<=30;i++){
+        const fx=cx0+(i/30)*cw,tt=(i/30)*12;
+        const use=tt>=9&&tt<12?0.1:1;
+        const wave=Math.sin(i*1.1)*0.05;
+        const fy=base+(ch-4)*(1-(use+wave)*0.92);
+        if(i===0)ctx.moveTo(fx,fy);else ctx.lineTo(fx,fy);
+      }
+      ctx.lineTo(cx0+cw,base);ctx.lineTo(cx0,base);ctx.closePath();
+      ctx.fillStyle="rgba(56,189,248,.12)";ctx.fill();
+      ctx.strokeStyle="rgba(56,189,248,.55)";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle="rgba(255,255,255,.5)";ctx.beginPath();ctx.arc(cx0+(t/12)*cw,base,3,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="rgba(255,255,255,.45)";ctx.font="10px Pretendard,sans-serif";
+      ctx.fillText("대기전력 소비 흐름 — 외출(9~12s) 시 자동 차단으로 0에 수렴",w/2,cy0+14);
+      ctx.textAlign="left";
+    }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -898,6 +945,17 @@ function triggerFlashEl(el,grad){if(!el)return;el.style.background=grad;el.class
     if(away===0){for(let i=0;i<12;i++){const x=((t*95+i*120)%(w*0.3))+rx-w*0.15;const yy=y+Math.sin(x*0.04+t*3)*6;ctx.beginPath();ctx.arc(x,yy,2,0,Math.PI*2);ctx.fillStyle="rgba(81,207,102,.65)";ctx.fill();}}
     house(lx,y,"rgba(255,107,107,.55)","BEFORE · 외출해도 전원 계속 켜짐",false);
     house(rx,y,"rgba(81,207,102,.6)",away===1?"AFTER · 외출 감지 → 자동 차단":"AFTER · 사용 중 정상 공급",true);
+    ctx.textAlign="center";
+    ctx.fillStyle="rgba(255,255,255,.4)";ctx.font="10px Pretendard,sans-serif";
+    ctx.fillText("외출 시 전력 소비",lx,y+34);
+    ctx.fillStyle="rgba(255,255,255,.06)";rr(ctx,lx-55,y+44,110,10,5);ctx.fill();
+    ctx.fillStyle="rgba(255,107,107,.85)";rr(ctx,lx-55,y+44,110,10,5);ctx.fill();
+    ctx.fillText("100% 소비",lx,y+70);
+    ctx.fillText("외출 시 전력 소비",rx,y+34);
+    ctx.fillStyle="rgba(255,255,255,.06)";rr(ctx,rx-55,y+44,110,10,5);ctx.fill();
+    ctx.fillStyle="rgba(81,207,102,.9)";rr(ctx,rx-55,y+44,away===1?5:110,10,5);ctx.fill();
+    ctx.fillText(away===1?"0W · 자동 차단":"100% 소비",rx,y+70);
+    ctx.textAlign="left";
     stepBurst(ctx,bursts,dt,"81,207,102");
     requestAnimationFrame(frame);
   }
@@ -926,9 +984,9 @@ function triggerFlashEl(el,grad){if(!el)return;el.style.background=grad;el.class
     if(!slide.classList.contains("active")){requestAnimationFrame(frame);return;}
     simT+=dt*0.45;if(simT>3.6)simT=0;
     ctx.fillStyle="rgba(11,26,46,0.15)";ctx.fillRect(0,0,w,h);
-    const barW=Math.min(w*0.26,250),gap=Math.min(w*0.035,28);
+    const barW=Math.min(w*0.24,230),gap=Math.min(w*0.03,26);
     const total=barW*3+gap*2;
-    const x0=w/2-total/2,y0=h*0.87,barH=Math.min(h*0.11,70);
+    const x0=w/2-total/2,y0=h*0.80,barH=Math.min(h*0.085,54);
     const yLine=y0-barH-8;
     ctx.textAlign="center";
     ctx.setLineDash([4,4]);ctx.strokeStyle="rgba(255,215,0,.35)";ctx.lineWidth=1;
@@ -959,7 +1017,7 @@ function triggerFlashEl(el,grad){if(!el)return;el.style.background=grad;el.class
       ctx.fillText(s.label+" · 연 "+s.annual.toLocaleString()+"원",bx+barW/2,y0+18);
     });
     ctx.fillStyle="rgba(255,255,255,.4)";ctx.font="11px Pretendard,sans-serif";
-    ctx.fillText("누적 절감액이 구매가(30,000원)를 넘는 순간 회수 완료 — 연도는 실제 절감액 비율(10,600 / 11,350 / 21,950원) 그대로 계산",w/2,y0+40);
+    ctx.fillText("누적 절감액이 구매가(30,000원)를 넘는 순간 회수 완료 — 연도는 실제 절감액 비율(10,600 / 11,350 / 21,950원) 그대로 계산",w/2,y0+34);
     ctx.textAlign="left";
     stepBurst(ctx,bursts,dt,"255,215,0");
     requestAnimationFrame(frame);
