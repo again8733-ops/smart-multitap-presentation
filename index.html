@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>홈즈AI의 스마트 멀티탭</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@latest/dist/gsap.min.js"></script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0a0a0f;font-family:"Pretendard",-apple-system,"Malgun Gothic",sans-serif;color:#fff}
+.slide{position:absolute;inset:0;display:none;width:100vw;height:100vh;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.slide.active{display:flex}
+.progress{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:100}
+.progress .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .3s;cursor:pointer}
+.progress .dot.active{background:#38bdf8;box-shadow:0 0 8px rgba(56,189,248,.5)}
+.stack-type{position:relative;font-weight:900;font-size:clamp(32px,6vw,80px);line-height:1.15;text-align:center;z-index:2}
+.stack-type .solid{color:#fff;display:block}
+.stack-type .outline{display:block;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.3);margin-top:-0.15em;transform:translateX(0.06em)}
+.caption-bar{position:absolute;left:24px;bottom:24px;max-width:80%;background:rgba(0,0,0,.55);color:#fff;font-weight:600;padding:10px 16px;border-radius:4px;font-size:clamp(14px,1.6vw,20px);z-index:5}
+h2{font-weight:900;font-size:clamp(28px,4vw,52px);margin-bottom:clamp(12px,2vh,32px);z-index:2;text-align:center}
+.slide p{font-size:clamp(14px,1.4vw,22px);z-index:2}
+canvas.bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* Hero */
+.slide-hero{background:linear-gradient(135deg,#0b1a2e 0%,#162d50 30%,#1a1a3e 60%,#0d2137 100%)}
+.slide-hero .event-label{position:absolute;bottom:clamp(60px,8vh,100px);font-size:clamp(12px,1.2vw,18px);color:rgba(180,220,255,.85);letter-spacing:6px;border:1px solid rgba(0,180,255,.25);padding:8px 28px;border-radius:30px;background:rgba(0,180,255,.06);backdrop-filter:blur(3px);z-index:2}
+.hero-sub{position:absolute;bottom:clamp(100px,12vh,140px);font-size:clamp(14px,1.5vw,22px);color:rgba(255,255,255,.5);letter-spacing:2px;z-index:2}
+
+/* Problem */
+.slide-problem{background:linear-gradient(135deg,#0d1b2a,#1b2838)}
+.problem-table{display:flex;flex-direction:column;gap:clamp(10px,1.5vh,20px);min-width:clamp(320px,50vw,600px);z-index:2}
+.problem-row{display:flex;align-items:center;gap:clamp(8px,1vw,16px);padding:clamp(12px,1.8vh,18px) clamp(16px,2vw,24px);border:1px solid rgba(0,180,255,.2);border-radius:12px;background:rgba(255,255,255,.04)}
+.problem-row:first-child{background:rgba(255,215,0,.06);border-color:rgba(255,215,0,.3)}
+.problem-row:first-child .problem-label{font-size:clamp(16px,1.8vw,24px);font-weight:700;color:#ffd700;text-align:center;width:100%}
+.problem-label{flex:1;font-size:clamp(13px,1.3vw,18px)}
+.problem-value{font-size:clamp(18px,1.8vw,28px);font-weight:700;color:#00d4ff;white-space:nowrap}
+.problem-source{font-size:clamp(10px,.85vw,13px);color:rgba(255,255,255,.4);white-space:nowrap;margin-left:8px}
+.problem-solution{margin-top:clamp(12px,2vh,28px)!important;font-size:clamp(13px,1.3vw,18px)!important;color:rgba(255,255,255,.8)!important;text-align:center;line-height:1.8;z-index:2}
+.problem-solution strong{color:#00d4ff}
+
+/* Flow */
+.slide-flow{background:linear-gradient(135deg,#0d1b2a,#162d50)}
+.flow-layout{display:flex;gap:clamp(16px,2vw,30px);align-items:center;z-index:2}
+.flow-content{display:flex;flex-direction:column;align-items:center;gap:4px}
+.flow-step{display:flex;align-items:center;gap:clamp(8px,1vw,14px);padding:clamp(10px,1.5vh,14px) clamp(16px,2vw,28px);border:1px solid rgba(0,180,255,.25);border-radius:12px;background:rgba(255,255,255,.05);min-width:clamp(300px,40vw,460px);justify-content:center}
+.flow-icon{font-size:clamp(20px,2.2vw,32px)}
+.flow-text{font-size:clamp(12px,1.2vw,18px);line-height:1.5;letter-spacing:.5px}
+.flow-arrow{font-size:clamp(14px,1.3vw,20px);color:rgba(0,180,255,.5);line-height:1}
+.highlight-off{color:#ff6b6b;font-weight:700}
+.highlight-on{color:#51cf66;font-weight:700}
+.multitap-visual{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mt-body{width:clamp(160px,18vw,240px);height:clamp(240px,28vh,340px);background:linear-gradient(160deg,#1e2a3e,#0f1a2e);border:2px solid rgba(0,180,255,.2);border-radius:18px;padding:clamp(8px,1vw,14px);display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 0 30px rgba(0,180,255,.05),inset 0 0 40px rgba(0,180,255,.03);position:relative}
+.mt-led{width:clamp(6px,.8vw,10px);height:clamp(6px,.8vw,10px);border-radius:50%;position:absolute;top:clamp(8px,1vw,12px);left:clamp(8px,1vw,12px)}
+.mt-on{background:#22dd88;box-shadow:0 0 10px rgba(34,221,136,.6)}
+.mt-label{font-size:clamp(10px,.85vw,13px);font-weight:700;color:#38bdf8;letter-spacing:2px;margin-top:4px}
+.mt-antenna{font-size:clamp(14px,1.3vw,20px);animation:iconFloat 2s ease-in-out infinite}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.mt-outlets{display:flex;flex-direction:column;gap:clamp(6px,.8vh,10px);width:100%;padding:6px 0}
+.mt-outlet{display:flex;align-items:center;justify-content:space-between;padding:clamp(3px,.4vh,4px) clamp(6px,.8vw,10px);background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(255,255,255,.05)}
+.mt-slot{width:clamp(36px,4vw,50px);height:clamp(16px,1.8vh,22px);border:2px solid rgba(255,255,255,.15);border-radius:4px;background:rgba(0,0,0,.3);position:relative}
+.mt-slot::before,.mt-slot::after{content:'';position:absolute;width:3px;height:clamp(8px,1vh,12px);background:rgba(255,255,255,.08);border-radius:2px;top:clamp(3px,.5vh,5px)}
+.mt-slot::before{left:clamp(8px,1vw,12px)}.mt-slot::after{right:clamp(8px,1vw,12px)}
+.mt-device{font-size:clamp(8px,.65vw,10px);color:rgba(255,255,255,.6);min-width:clamp(40px,5vw,55px)}
+.mt-status{font-size:clamp(8px,.65vw,10px);font-weight:700;padding:2px clamp(6px,.8vw,10px);border-radius:10px}
+.mt-status.mt-on{color:#22dd88;background:rgba(34,221,136,.1)}
+.mt-status.mt-off{color:#ff4444;background:rgba(255,68,68,.1)}
+.mt-cord{width:6px;height:clamp(16px,2.5vh,30px);background:#2a3a4a;border-radius:3px;margin-top:4px}
+.mt-tag{font-size:clamp(10px,.8vw,12px);color:rgba(255,255,255,.4)}
+
+/* Diff */
+.slide-diff{background:linear-gradient(135deg,#0f1a2e,#1a2a3e)}
+.diff-container{display:flex;align-items:stretch;gap:clamp(12px,2vw,24px);z-index:2}
+.diff-col{border-radius:16px;padding:clamp(16px,2.5vh,28px) clamp(20px,2.5vw,32px);min-width:clamp(260px,30vw,350px);display:flex;flex-direction:column}
+.diff-old{background:linear-gradient(160deg,rgba(80,20,20,.25),rgba(40,10,10,.15));border:1px solid rgba(255,80,80,.2)}
+.diff-new{background:linear-gradient(160deg,rgba(0,60,100,.25),rgba(0,30,60,.15));border:1px solid rgba(0,180,255,.25)}
+.diff-label{font-size:clamp(10px,.8vw,13px);letter-spacing:3px;margin-bottom:6px}
+.diff-old .diff-label{color:rgba(255,80,80,.5)}.diff-new .diff-label{color:rgba(0,200,255,.5)}
+.diff-col h3{font-size:clamp(16px,1.6vw,24px);margin-bottom:clamp(10px,1.5vh,18px);padding-bottom:clamp(8px,1vh,12px);border-bottom:1px solid rgba(255,255,255,.08)}
+.diff-old h3{color:#ff6b6b}.diff-new h3{color:#00d4ff}
+.diff-col ul{list-style:none;font-size:clamp(13px,1.1vw,17px);line-height:2.4;flex:1}
+.diff-x{color:#ff6b6b;font-weight:700;margin-right:8px}
+.diff-o{color:#51cf66;font-weight:700;margin-right:8px}
+.diff-old li{color:rgba(255,255,255,.55)}
+.diff-new li{color:rgba(255,255,255,.85)}
+.diff-new li strong{color:#51cf66}
+.diff-vs{display:flex;align-items:center;font-size:clamp(20px,1.8vw,28px);font-weight:800;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,.3);letter-spacing:2px}
+
+/* Biz/Savings */
+.slide-biz{background:linear-gradient(135deg,#0b1a2e,#162d50)}
+.save-scenarios{display:flex;gap:clamp(8px,1vw,14px);margin-bottom:clamp(10px,1.5vh,16px);flex-wrap:wrap;justify-content:center;z-index:2}
+.scenario{display:flex;align-items:center;gap:clamp(8px,1vw,12px);border:1px solid rgba(0,180,255,.2);border-radius:12px;padding:clamp(10px,1.5vh,14px) clamp(12px,1.5vw,20px);background:rgba(255,255,255,.04);flex:1;min-width:clamp(180px,20vw,240px)}
+.scenario-icon{font-size:clamp(24px,2.2vw,36px)}
+.scenario-title{font-size:clamp(12px,1.1vw,16px);color:rgba(255,255,255,.7);margin-bottom:4px}
+.scenario-detail{font-size:clamp(14px,1.2vw,18px);line-height:1.6}
+.scenario-detail strong{color:#00d4ff;font-size:clamp(18px,1.4vw,22px)}
+.scenario-total{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05)}
+.scenario-total .scenario-title{color:#ffd700;font-weight:700}
+.scenario-total .scenario-detail strong{color:#ffd700}
+.price-row{display:flex;gap:clamp(8px,1vw,16px);margin-bottom:clamp(10px,1.5vh,20px);z-index:2;flex-wrap:wrap;justify-content:center}
+.price-item{border-radius:12px;padding:clamp(10px,1.5vh,16px) clamp(12px,1.5vw,20px);min-width:clamp(140px,15vw,180px);flex:1;text-align:center}
+.price-main{border:1px solid rgba(0,180,255,.3);background:rgba(0,180,255,.08)}
+.price-roi{border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.06)}
+.price-profit{border:1px solid rgba(81,207,102,.3);background:rgba(81,207,102,.06)}
+.price-tag{font-size:clamp(10px,.8vw,13px);color:rgba(255,255,255,.5);margin-bottom:4px}
+.price-num{font-size:clamp(22px,2vw,32px);font-weight:700}
+.price-main .price-num{color:#00d4ff}.price-roi .price-num{color:#ffd700}.price-profit .price-num{color:#51cf66}
+.price-detail{font-size:clamp(10px,.8vw,13px);color:rgba(255,255,255,.6);margin-top:4px}
+.save-benefits{display:flex;gap:clamp(6px,.8vw,12px);flex-wrap:wrap;justify-content:center;z-index:2}
+.benefit-item{border:1px solid rgba(255,215,0,.2);border-radius:10px;padding:clamp(6px,.8vh,10px) clamp(12px,1.5vw,20px);background:rgba(255,215,0,.05);color:#ffd700;font-size:clamp(11px,1vw,15px)}
+.benefit-icon{margin-right:6px}
+
+/* Invest */
+.slide-invest{background:linear-gradient(135deg,#0d1b2a,#1a2838)}
+.invest-grid{display:flex;gap:clamp(8px,1vw,12px);max-width:clamp(700px,70vw,920px);z-index:2}
+.invest-card{border:1px solid rgba(0,180,255,.15);border-radius:12px;padding:clamp(10px,1.5vh,14px) clamp(10px,1.2vw,16px);background:rgba(255,255,255,.04);flex:1;text-align:center}
+.invest-icon{font-size:clamp(20px,1.8vw,28px);margin-bottom:4px}
+.invest-card h3{font-size:clamp(11px,1vw,15px);color:#ffd700;margin-bottom:4px}
+.invest-highlight{font-size:clamp(14px,1.3vw,20px);font-weight:700;color:#00d4ff;margin-bottom:4px}
+.invest-card p{font-size:clamp(10px,.8vw,13px)!important;color:rgba(255,255,255,.7)!important;line-height:1.35}
+.invest-card strong{color:#fff}
+.invest-competitors{margin-top:clamp(6px,.8vh,10px);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:clamp(8px,1vh,10px) clamp(12px,1.5vw,18px);background:rgba(255,255,255,.03);max-width:clamp(700px,70vw,920px);z-index:2}
+.invest-competitors h3{color:#ffd700;font-size:clamp(11px,.9vw,14px);margin-bottom:6px}
+.comp-grid{display:flex;flex-wrap:wrap;gap:4px 14px}
+.comp-item{font-size:clamp(10px,.8vw,13px);color:rgba(255,255,255,.6);white-space:nowrap}
+.comp-item strong{color:rgba(255,255,255,.85)}
+.comp-note{margin-top:6px!important;text-align:center;font-size:clamp(11px,.8vw,13px)!important;color:rgba(255,255,255,.6)!important;line-height:1.4}
+.comp-note strong{color:#ffd700}
+.invest-smarthome{margin-top:clamp(6px,.8vh,10px);border:1px solid rgba(0,180,255,.12);border-radius:12px;padding:clamp(8px,1vh,10px) clamp(12px,1.5vw,18px);background:rgba(0,180,255,.04);max-width:clamp(700px,70vw,920px);text-align:center;z-index:2}
+.invest-smarthome h3{color:#00d4ff;font-size:clamp(11px,.9vw,14px);margin-bottom:6px}
+.sh-flow{display:flex;align-items:center;justify-content:center;gap:clamp(4px,.6vw,8px)}
+.sh-item{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sh-item .sh-icon{font-size:clamp(18px,1.6vw,24px)}
+.sh-item .sh-label{font-size:clamp(10px,.7vw,11px);color:rgba(255,255,255,.6)}
+.sh-arrow{font-size:clamp(14px,1.2vw,18px);color:rgba(0,180,255,.4)}
+.invest-smarthome .sh-desc{margin-top:6px!important;font-size:clamp(11px,.8vw,13px)!important;color:rgba(255,255,255,.6)!important}
+.invest-smarthome .sh-desc strong{color:#00d4ff}
+.invest-bottom{margin-top:clamp(6px,1vh,10px);text-align:center;z-index:2}
+.invest-bottom p{font-size:clamp(13px,1vw,16px)!important;color:rgba(255,255,255,.8)!important}
+.invest-bottom strong{color:#ffd700}
+.invest-source{margin-top:4px;text-align:center;z-index:2}
+.invest-source p{font-size:clamp(9px,.65vw,11px)!important;color:rgba(255,255,255,.35)!important}
+.invest-source strong{color:rgba(255,255,255,.6)}
+
+/* Simulation */
+.slide-happy{background:linear-gradient(135deg,#0f172a,#1e293b);gap:clamp(8px,1vh,16px)}
+.slide-happy h2{margin-bottom:0}
+.happy-sub{font-size:clamp(14px,1.2vw,18px)!important;color:rgba(255,255,255,.5)!important}
+.happy-btn{padding:clamp(10px,1.5vh,16px) clamp(24px,3vw,48px);font-size:clamp(16px,1.3vw,22px);font-weight:700;color:#fff;background:linear-gradient(135deg,#38bdf8,#1d4ed8);border:none;border-radius:30px;cursor:pointer;transition:transform .2s,box-shadow .2s;z-index:2}
+.happy-btn:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(56,189,248,.4)}
+.slide-happy .happy-btn.active{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.sim-frame{display:none;width:clamp(300px,80%,780px);height:clamp(240px,50vh,500px);border:none;border-radius:16px;z-index:2}
+.sim-frame.visible{display:block}
+
+/* Demo */
+.slide-demo{background:linear-gradient(135deg,#0d1b2a,#1b2838)}
+.demo-placeholder{border:2px dashed rgba(0,180,255,.3);border-radius:16px;padding:clamp(30px,5vh,60px) clamp(30px,6vw,80px);text-align:center;z-index:2}
+.demo-icon{font-size:clamp(40px,4vw,64px);margin-bottom:16px}
+.demo-placeholder p{font-size:clamp(14px,1.2vw,18px)!important;color:rgba(255,255,255,.5)!important;margin-bottom:20px}
+.demo-btn{display:inline-block;padding:clamp(10px,1.5vh,14px) clamp(24px,3vw,40px);font-size:clamp(16px,1.2vw,20px);font-weight:700;color:#fff;background:linear-gradient(135deg,#00d4ff,#0088cc);border:none;border-radius:30px;cursor:pointer;transition:transform .2s,box-shadow .2s;text-decoration:none}
+.demo-btn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(0,180,255,.4)}
+
+/* Shake effect (spectacle-fx) */
+.slide.shake{animation:shakeKey .22s linear}
+@keyframes shakeKey{0%{transform:translate(0,0)}15%{transform:translate(-10px,6px)}30%{transform:translate(8px,-8px)}45%{transform:translate(-7px,5px)}60%{transform:translate(6px,-4px)}75%{transform:translate(-3px,2px)}100%{transform:translate(0,0)}}
+
+/* Flash overlay */
+.flash-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,200,120,.5),rgba(255,178,32,0) 55%)}
+.flash-overlay.on{animation:flashKey .3s ease-out}
+@keyframes flashKey{0%{opacity:.9}100%{opacity:0}}
+
+/* Marquee border for hero */
+.marquee-border{position:absolute;top:0;left:0;width:100%;overflow:hidden;white-space:nowrap;background:rgba(124,92,255,.15);color:rgba(255,255,255,.08);font-weight:800;padding:3px 0;z-index:1;font-size:clamp(10px,.8vw,13px);letter-spacing:4px}
+.marquee-border .marquee-track{display:inline-block;animation:marqueeKey 20s linear infinite}
+@keyframes marqueeKey{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* Stacked title on hero */
+.hero-title{position:relative;z-index:2;margin-bottom:0}
+
+/* Keyword highlight */
+mark.kw{background:#ff6b57;color:#fff;padding:2px 8px;border-radius:2px;font-weight:700}
+mark.kw.blue{background:#00d4ff}
+mark.kw.gold{background:#ffd700;color:#0a0a0f}
+
+/* Responsive adjustments */
+@media(max-width:768px){
+  .flow-layout{flex-direction:column;gap:12px}
+  .flow-step{min-width:unset;width:90%}
+  .multitap-visal{display:none}
+  .mt-body{display:none}
+  .diff-container{flex-direction:column;align-items:center}
+  .diff-col{min-width:unset;width:80%}
+  .invest-grid{flex-wrap:wrap}
+  .invest-card{min-width:140px}
+  .sh-flow{flex-wrap:wrap;justify-content:center}
+}
+@media(max-width:480px){
+  .stack-type{font-size:clamp(22px,8vw,36px)}
+  h2{font-size:clamp(20px,7vw,28px)}
+  .problem-table{min-width:unset;width:90%}
+  .problem-row{flex-wrap:wrap}
+  .problem-value{font-size:clamp(14px,5vw,18px)}
+  .save-scenarios,.price-row{flex-direction:column;align-items:center}
+  .scenario,.price-item{min-width:unset;width:85%}
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+  <!-- 1: Hero -->
+  <section class="slide slide-hero" data-index="0">
+    <canvas class="bg" id="hero-canvas"></canvas>
+    <div class="flash-overlay" id="flash-overlay"></div>
+    <div class="marquee-border"><div class="marquee-track"><span>SMART MULTI-TAP &nbsp; 홈즈AI &nbsp; SMART MULTI-TAP &nbsp; 홈즈AI &nbsp; </span><span>SMART MULTI-TAP &nbsp; 홈즈AI &nbsp; SMART MULTI-TAP &nbsp; 홈즈AI &nbsp; </span></div></div>
+    <div class="stack-type hero-title">
+      <span class="solid">홈즈AI의<br>스마트 멀티탭</span>
+      <span class="outline">홈즈AI의<br>스마트 멀티탭</span>
+    </div>
+    <p class="hero-sub">AI로 대기전력을 잡다</p>
+    <div class="event-label">2026 AI 에너지 스마트홈 메이커톤</div>
+    <div class="caption-bar">🏠 AI 얼굴인식 자동 ON/OFF 스마트 멀티탭</div>
+  </section>
+
+  <!-- 2: TOC -->
+  <section class="slide" data-index="1" style="background:linear-gradient(135deg,#0b1a2e,#162d50)">
+    <canvas class="bg" id="toc-canvas"></canvas>
+    <h2 data-anim="up">목차</h2>
+    <ol style="font-size:clamp(18px,2vw,28px);line-height:2.4;z-index:2;list-style:none;text-align:center" data-anim="up">
+      <li data-anim="up"><span style="color:#38bdf8;font-weight:700">01</span> &nbsp;스마트 멀티탭 소개</li>
+      <li data-anim="up"><span style="color:#38bdf8;font-weight:700">02</span> &nbsp;차별성</li>
+      <li data-anim="up"><span style="color:#38bdf8;font-weight:700">03</span> &nbsp;비즈니스 모델</li>
+      <li data-anim="up"><span style="color:#38bdf8;font-weight:700">04</span> &nbsp;스마트 멀티탭 동작 확인</li>
+    </ol>
+  </section>
+
+  <!-- 3: Problem -->
+  <section class="slide slide-problem" data-index="2">
+    <canvas class="bg" id="problem-canvas"></canvas>
+    <h2 data-anim="up">문제 정의</h2>
+    <div class="problem-table" data-anim="up">
+      <div class="problem-row">
+        <span class="problem-label"><mark class="kw gold">많은 사람들이 외출 시 멀티탭을 끄지 않고 외출한다</mark></span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">가정·업무용 전력 중 대기전력 비중</span>
+        <span class="problem-value">10~11%</span>
+        <span class="problem-source">한국에너지공단</span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">연간 대기전력 낭비 금액</span>
+        <span class="problem-value">약 4,000억~4,200억원</span>
+        <span class="problem-source">한국전기연구원</span>
+      </div>
+    </div>
+    <p class="problem-solution" data-anim="up">→ 이러한 전력 손실을 줄이기 위해<br><strong>AI 기반 스마트 멀티탭</strong>을 개발하게 되었다</p>
+  </section>
+
+  <!-- 4: Flow -->
+  <section class="slide slide-flow" data-index="3">
+    <h2 data-anim="up">홈즈AI의 스마트 멀티탭 소개</h2>
+    <div class="flow-layout">
+      <div class="flow-content" data-anim="up">
+        <div class="flow-step"><span class="flow-icon">📊</span><span class="flow-text">AI가 대기전력을 감지하여 사용하지 않는 가전을 판단</span></div>
+        <div class="flow-arrow">⬇</div>
+        <div class="flow-step"><span class="flow-icon">📷</span><span class="flow-text">얼굴 인식을 하여 사용자를 식별한다</span></div>
+        <div class="flow-arrow">⬇</div>
+        <div class="flow-step"><span class="flow-icon">🔌</span><span class="flow-text"><strong>외출 시</strong> → 사용하지 않는 가전 <span class="highlight-off">자동 OFF</span></span></div>
+        <div class="flow-arrow">⬇</div>
+        <div class="flow-step"><span class="flow-icon">🏠</span><span class="flow-text"><strong>귀가 시</strong> → 자주 쓰는 가전 <span class="highlight-on">자동 ON</span></span></div>
+      </div>
+      <div class="multitap-visual" data-anim="up">
+        <div class="mt-body">
+          <div class="mt-led mt-on"></div>
+          <div class="mt-label">홈즈AI</div>
+          <div class="mt-antenna">📶</div>
+          <div class="mt-outlets">
+            <div class="mt-outlet"><span class="mt-device">💻 노트북</span><div class="mt-slot"></div><div class="mt-status mt-on">ON</div></div>
+            <div class="mt-outlet"><span class="mt-device">🔌 충전기</span><div class="mt-slot"></div><div class="mt-status mt-off">OFF</div></div>
+            <div class="mt-outlet"><span class="mt-device">🌀 선풍기</span><div class="mt-slot"></div><div class="mt-status mt-off">OFF</div></div>
+            <div class="mt-outlet"><span class="mt-device">📡 공유기</span><div class="mt-slot"></div><div class="mt-status mt-on">ON</div></div>
+          </div>
+          <div class="mt-cord"></div>
+        </div>
+        <div class="mt-tag">🔌 4구 스마트 멀티탭</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: Diff -->
+  <section class="slide slide-diff" data-index="4">
+    <h2 data-anim="up">차별성</h2>
+    <div class="diff-container">
+      <div class="diff-col diff-old" data-anim="up">
+        <div class="diff-label">BEFORE</div>
+        <h3>기존 멀티탭</h3>
+        <ul>
+          <li><span class="diff-x">✗</span> 수동으로만 제어 가능</li>
+          <li><span class="diff-x">✗</span> 외출 시 끄지 않으면 전력 낭비</li>
+          <li><span class="diff-x">✗</span> 사용 패턴과 무관하게 동작</li>
+        </ul>
+      </div>
+      <div class="diff-vs" data-anim="up">VS</div>
+      <div class="diff-col diff-new" data-anim="up">
+        <div class="diff-label">AFTER</div>
+        <h3>홈즈AI 스마트 멀티탭</h3>
+        <ul>
+          <li><span class="diff-o">✓</span> 얼굴 인식 → 자주 쓰는 가전 <strong>자동 ON</strong></li>
+          <li><span class="diff-o">✓</span> 사용하지 않을 때 <strong>자동 OFF</strong> → 전기 요금 절감</li>
+          <li><span class="diff-o">✓</span> 웹에서 수동 제어 가능</li>
+          <li><span class="diff-o">✓</span> 웹에서 절감된 전기 요금 및 사용 전력량 확인</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6: Savings + Price -->
+  <section class="slide slide-biz" data-index="5">
+    <canvas class="bg" id="savings-canvas"></canvas>
+    <h2 data-anim="up">전력 절감 효과 &amp; 가격</h2>
+    <div class="save-scenarios" data-anim="up">
+      <div class="scenario">
+        <div class="scenario-icon">📺</div>
+        <div class="scenario-body">
+          <div class="scenario-title">멀티탭 1개 + 셋톱박스</div>
+          <div class="scenario-detail"><strong>연간 약 10,600원</strong> 절감</div>
+          <div class="scenario-detail">약 <strong>2.8년</strong> 회수</div>
+        </div>
+      </div>
+      <div class="scenario">
+        <div class="scenario-icon">🖥️</div>
+        <div class="scenario-body">
+          <div class="scenario-title">멀티탭 1개 + 컴퓨터</div>
+          <div class="scenario-detail">1단계 기준 <strong>연간 약 11,350원</strong> 절감</div>
+          <div class="scenario-detail">약 <strong>2.6년</strong> 회수</div>
+        </div>
+      </div>
+      <div class="scenario scenario-total">
+        <div class="scenario-icon">🏠</div>
+        <div class="scenario-body">
+          <div class="scenario-title">멀티탭 2개 (셋톱 + 컴퓨터)</div>
+          <div class="scenario-detail"><strong>연간 약 21,950원</strong> 절감</div>
+          <div class="scenario-detail">약 <strong>1.4년</strong> 회수</div>
+        </div>
+      </div>
+    </div>
+    <div class="price-row" data-anim="up">
+      <div class="price-item price-main">
+        <div class="price-tag">소비자 가격</div>
+        <div class="price-num">30,000원</div>
+        <div class="price-detail">일반형보다 14,000원 더 비쌀 뿐</div>
+      </div>
+      <div class="price-item price-roi">
+        <div class="price-tag">멀티탭 1개 회수기간</div>
+        <div class="price-num">2.6~2.8년</div>
+        <div class="price-detail">2개 사용 시 약 1.4년</div>
+      </div>
+      <div class="price-item price-profit">
+        <div class="price-tag">연간 절감액 (2개)</div>
+        <div class="price-num">약 21,950원</div>
+        <div class="price-detail">셋톱박스 + 컴퓨터 기준</div>
+      </div>
+    </div>
+    <div class="save-benefits" data-anim="up">
+      <div class="benefit-item"><span class="benefit-icon">📉</span> 전기료 누진세 완화</div>
+      <div class="benefit-item"><span class="benefit-icon">🔋</span> 가전 수명 연장</div>
+      <div class="benefit-item"><span class="benefit-icon">🔥</span> 화재 예방</div>
+      <div class="benefit-item"><span class="benefit-icon">😊</span> 편의성</div>
+      <div class="benefit-item"><span class="benefit-icon">💡</span> 자동 ON/OFF</div>
+    </div>
+  </section>
+
+  <!-- 7: Investor -->
+  <section class="slide slide-invest" data-index="6">
+    <canvas class="bg" id="invest-canvas"></canvas>
+    <h2 data-anim="up">투자자 관점</h2>
+    <div class="invest-grid" data-anim="up">
+      <div class="invest-card invest-market">
+        <div class="invest-icon">🌐</div>
+        <h3>TAM (전체 시장)</h3>
+        <div class="invest-highlight">약 4,000억원</div>
+        <p>한국경제신문·위너스 CEO 인터뷰<br><strong>실제 보도된 시장 규모</strong></p>
+      </div>
+      <div class="invest-card invest-first">
+        <div class="invest-icon">🎯</div>
+        <h3>SAM (공략 가능)</h3>
+        <div class="invest-highlight">400~600억원</div>
+        <p>프리미엄 스마트 멀티탭 세그먼트<br>전체 시장의 <strong>10~15%</strong></p>
+      </div>
+      <div class="invest-card invest-scale">
+        <div class="invest-icon">🏠</div>
+        <h3>스마트홈 확장성</h3>
+        <div class="invest-highlight">IoT 생태계 연동</div>
+        <p>스마트 조명·센서·가전과 연동<br>홈IoT <strong>허브 역할</strong>로 확장 가능</p>
+      </div>
+      <div class="invest-card invest-biz">
+        <div class="invest-icon">📈</div>
+        <h3>B2B 확장</h3>
+        <div class="invest-highlight">호텔·오피스·공공</div>
+        <p>객실·사무실 전원 자동 차단<br>일본·동남아 <strong>해외 시장</strong> 진출</p>
+      </div>
+    </div>
+    <div class="invest-competitors" data-anim="up">
+      <h3>경쟁 현황</h3>
+      <div class="comp-grid">
+        <div class="comp-item"><strong>TP-Link</strong> Kasa/Tapo — 시장 1위, Matter 지원</div>
+        <div class="comp-item"><strong>Belkin</strong> WeMo — Apple HomeKit 최적화</div>
+        <div class="comp-item"><strong>Amazon</strong> Smart Plug — Alexa 생태계 연동</div>
+        <div class="comp-item"><strong>GE</strong> Cync — Matter 멀티 플랫폼</div>
+        <div class="comp-item"><strong>Eve Systems</strong> Thread 기반, 로컬 프로세싱</div>
+        <div class="comp-item"><strong>Meross / Wyze</strong> — 가성비 라인</div>
+        <div class="comp-item"><strong>APC / CyberPower / Tripp Lite</strong> — 서지 보호 + 전문가용</div>
+      </div>
+      <p class="comp-note">※ 많은 기업이 시도 중이지만,<br>얼굴인식 + 사용자 패턴 기반 자동 제어를 제공하는 제품은 <strong>아직 없다</strong></p>
+    </div>
+    <div class="invest-smarthome" data-anim="up">
+      <h3>🔑 현관 신원확인을 스마트홈 전체로 확장</h3>
+      <div class="sh-flow">
+        <div class="sh-item"><span class="sh-icon">📷</span><span class="sh-label">현관 얼굴인식</span></div>
+        <span class="sh-arrow">→</span>
+        <div class="sh-item"><span class="sh-icon">🔌</span><span class="sh-label">멀티탭 ON/OFF</span></div>
+        <span class="sh-arrow">→</span>
+        <div class="sh-item"><span class="sh-icon">💡</span><span class="sh-label">조명·온도 자동 설정</span></div>
+        <span class="sh-arrow">→</span>
+        <div class="sh-item"><span class="sh-icon">🔐</span><span class="sh-label">보안·방범 연동</span></div>
+      </div>
+      <p class="sh-desc">현관에서의 <strong>1회 인증</strong>으로 집 안의 모든 IoT 기기를<br>사용자 맞춤형으로 제어 — <strong>진정한 스마트홈의 시작점</strong></p>
+    </div>
+    <div class="invest-source" data-anim="up">
+      <p>※ TAM 4,000억원 출처: <strong>한국경제신문</strong> (2025.10.27, 위너스 김창성 대표 인터뷰)</p>
+    </div>
+    <div class="invest-bottom" data-anim="up">
+      <p><strong>초기 투자 5,000만원, BEP 약 5,000대 — 3년 목표 연 매출 3~5억원</strong></p>
+    </div>
+  </section>
+
+  <!-- 8: Simulation -->
+  <section class="slide slide-happy" data-index="7">
+    <canvas class="bg" id="happy-canvas"></canvas>
+    <h2 data-anim="up">⚡ 대기전력 차단 시뮬레이션</h2>
+    <p class="happy-sub" data-anim="up">외출 시 멀티탭을 자동 차단하면? → 사람이 기분 좋아지는 마법</p>
+    <button class="happy-btn" onclick="toggleSimulation()" data-no-advance>▶ 시뮬레이션 보기</button>
+    <iframe id="simFrame" class="sim-frame" src="smart-multitap-happy.html"></iframe>
+  </section>
+
+  <!-- 9: Demo -->
+  <section class="slide slide-demo" data-index="8">
+    <canvas class="bg" id="demo-canvas"></canvas>
+    <h2 data-anim="up">스마트 멀티탭 동작 확인</h2>
+    <div class="demo-placeholder" data-anim="up">
+      <div class="demo-icon">🎥</div>
+      <p>아래 버튼을 클릭하여 동작 확인 영상 보기</p>
+      <a href="https://again8733-ops.github.io/makerton-live-relay/" target="_blank" class="demo-btn" data-no-advance>▶ 동작 확인하기</a>
+    </div>
+  </section>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const progress = document.getElementById("progress");
+  let current = -1;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.addEventListener("click", () => goTo(i));
+    progress.appendChild(dot);
+  });
+
+  function goTo(index) {
+    if (index < 0 || index >= slides.length || index === current) return;
+    if (current >= 0) {
+      slides[current].classList.remove("active");
+      progress.children[current].classList.remove("active");
+    }
+    current = index;
+    slides[current].classList.add("active");
+    progress.children[current].classList.add("active");
+    slides[current].dispatchEvent(new CustomEvent("slide-enter"));
+
+    const frame = document.getElementById("simFrame");
+    const btn = document.querySelector(".happy-btn");
+    if (frame && current !== 7) {
+      frame.classList.remove("visible");
+      if (btn) { btn.textContent = "▶ 시뮬레이션 보기"; btn.classList.remove("active"); }
+    }
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goTo(current + 1); }
+    if (e.key === "ArrowLeft") goTo(current - 1);
+  });
+
+  document.getElementById("deck").addEventListener("click", (e) => {
+    if (e.target.closest("[data-no-advance]")) return;
+    goTo(current + 1);
+  });
+
+  // GSAP entrance animations
+  slides.forEach((slide) => {
+    slide.addEventListener("slide-enter", () => {
+      const els = slide.querySelectorAll("[data-anim]");
+      els.forEach(el => { el.style.opacity = "0"; el.style.transform = "translateY(20px)"; });
+      gsap.fromTo(els,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out", overwrite: "auto" }
+      );
+    });
+  });
+
+  goTo(0);
+})();
+
+function toggleSimulation() {
+  const frame = document.getElementById("simFrame");
+  const btn = document.querySelector(".happy-btn");
+  if (frame.classList.contains("visible")) {
+    frame.classList.remove("visible");
+    btn.textContent = "▶ 시뮬레이션 보기";
+    btn.classList.remove("active");
+  } else {
+    frame.src = "smart-multitap-happy.html";
+    frame.classList.add("visible");
+    btn.textContent = "■ 시뮬레이션 닫기";
+    btn.classList.add("active");
+  }
+}
+</script>
+
+<script>
+// Hero: particle network background (canvas-particles.md Pattern D)
+(function(){
+  const canvas = document.getElementById("hero-canvas");
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+
+  const count = 60;
+  const pts = Array.from({ length: count }, () => ({
+    x: Math.random() * w, y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+  }));
+  const color = "56,189,248";
+  const flash = document.getElementById("flash-overlay");
+
+  let shakeTimer = 0;
+  let impactProgress = -1;
+  let debris = [];
+  let impactX = 0, impactY = 0;
+  let dt = 0;
+  let lastT = 0;
+
+  function triggerShake() {
+    const el = document.querySelector(".slide-hero");
+    if (!el) return;
+    el.classList.remove("shake");
+    void el.offsetWidth;
+    el.classList.add("shake");
+    const f = flash;
+    f.classList.remove("on");
+    void f.offsetWidth;
+    f.classList.add("on");
+  }
+
+  function spawnDebris(x, y) {
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2;
+      debris.push({
+        x, y,
+        vx: Math.cos(a) * (20 + Math.random() * 30),
+        vy: Math.sin(a) * (20 + Math.random() * 30) - 8,
+        life: 0, maxLife: 0.6 + Math.random() * 0.4,
+      });
+    }
+  }
+
+  function frame(t) {
+    dt = lastT ? (t - lastT) / 1000 : 0.016;
+    lastT = t;
+    ctx.clearRect(0, 0, w, h);
+
+    pts.forEach((p) => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${color},0.6)`; ctx.fill();
+    });
+
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 150) {
+          ctx.globalAlpha = 1 - dist / 150;
+          ctx.strokeStyle = `rgba(${color},0.3)`;
+          ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    // Periodic impact (spectacle-fx)
+    shakeTimer += dt;
+    if (shakeTimer > 3.5) {
+      shakeTimer = 0;
+      impactProgress = 0;
+      impactX = w * (0.2 + Math.random() * 0.6);
+      impactY = h * (0.2 + Math.random() * 0.6);
+      spawnDebris(impactX, impactY);
+      triggerShake();
+    }
+
+    if (impactProgress >= 0) {
+      impactProgress += dt;
+      const p = Math.min(impactProgress / 0.45, 1);
+      if (p < 0.35) {
+        const r = 26 * (1 - p / 0.35) + 4;
+        const grad = ctx.createRadialGradient(impactX, impactY, 0, impactX, impactY, r + 6);
+        grad.addColorStop(0, "rgba(255,255,255,.9)");
+        grad.addColorStop(0.5, `rgba(56,189,248,.7)`);
+        grad.addColorStop(1, `rgba(56,189,248,0)`);
+        ctx.beginPath(); ctx.arc(impactX, impactY, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad; ctx.fill();
+      }
+      if (p < 1) {
+        const ringR = p * 50;
+        ctx.strokeStyle = `rgba(56,189,248,${Math.max(0, 0.5 - p * 0.5)})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(impactX, impactY, ringR, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (impactProgress > 1.2) impactProgress = -1;
+    }
+
+    for (let i = debris.length - 1; i >= 0; i--) {
+      const d = debris[i];
+      d.life += dt; d.x += d.vx * dt; d.y += d.vy * dt; d.vy -= 4 * dt;
+      if (d.life >= d.maxLife) { debris.splice(i, 1); continue; }
+      const a = Math.max(0, 1 - d.life / d.maxLife) * 0.4;
+      ctx.beginPath(); ctx.arc(d.x, d.y, 3 + d.life * 8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(56,189,248,${a})`; ctx.fill();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// TOC canvas: wave grid
+(function(){
+  const canvas = document.getElementById("toc-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+  let t = 0;
+  function frame() {
+    ctx.fillStyle = "rgba(11,26,46,0.15)"; ctx.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 28) {
+      for (let y = 0; y < h; y += 28) {
+        const r = 1.5 + 1.5 * Math.sin(x * 0.02 + t) * Math.cos(y * 0.02 + t * 0.7);
+        ctx.beginPath(); ctx.arc(x, y, Math.max(r, 0), 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(56,189,248,0.15)"; ctx.fill();
+      }
+    }
+    t += 0.025;
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Problem canvas: energy waste particles
+(function(){
+  const canvas = document.getElementById("problem-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+
+  const count = 30;
+  const particles = Array.from({ length: count }, () => ({
+    x: Math.random() * w, y: h * 0.3 + Math.random() * h * 0.4,
+    vx: (Math.random() - 0.5) * 0.5, vy: -0.3 - Math.random() * 0.8,
+    life: Math.random(), maxLife: 1 + Math.random(),
+  }));
+
+  function frame() {
+    ctx.fillStyle = "rgba(13,27,42,0.15)"; ctx.fillRect(0, 0, w, h);
+
+    particles.forEach((p) => {
+      p.life += 0.008;
+      if (p.life >= p.maxLife) {
+        p.x = Math.random() * w; p.y = h * 0.5 + Math.random() * h * 0.3;
+        p.life = 0; p.vx = (Math.random() - 0.5) * 0.5; p.vy = -0.3 - Math.random() * 0.8;
+      }
+      p.x += p.vx; p.y += p.vy;
+      const a = Math.max(0, 0.6 - p.life / p.maxLife * 0.6);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2 + p.life * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,200,50,${a})`; ctx.fill();
+    });
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Savings canvas: accumulating money particles
+(function(){
+  const canvas = document.getElementById("savings-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+
+  const particles = Array.from({ length: 25 }, () => ({
+    x: Math.random() * w, y: h * 0.7 + Math.random() * h * 0.3,
+    vy: -0.2 - Math.random() * 0.5,
+    life: Math.random(), maxLife: 2 + Math.random(),
+  }));
+
+  function frame() {
+    ctx.fillStyle = "rgba(11,26,46,0.12)"; ctx.fillRect(0, 0, w, h);
+
+    particles.forEach((p) => {
+      p.life += 0.005;
+      if (p.life >= p.maxLife) {
+        p.x = Math.random() * w; p.y = h * 0.7 + Math.random() * h * 0.3;
+        p.life = 0; p.vy = -0.2 - Math.random() * 0.5;
+      }
+      p.y += p.vy;
+      const a = Math.max(0, 0.5 - p.life / p.maxLife * 0.5);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(81,207,102,${a})`; ctx.fill();
+    });
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Invest canvas: network nodes growing
+(function(){
+  const canvas = document.getElementById("invest-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+
+  const pts = Array.from({ length: 20 }, () => ({
+    x: Math.random() * w, y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+    r: 1.5 + Math.random() * 2,
+  }));
+  const color = "255,215,0";
+
+  function frame() {
+    ctx.fillStyle = "rgba(13,27,42,0.12)"; ctx.fillRect(0, 0, w, h);
+
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${color},0.4)`; ctx.fill();
+
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = p.x - pts[j].x, dy = p.y - pts[j].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 200) {
+          ctx.globalAlpha = 1 - dist / 200;
+          ctx.strokeStyle = `rgba(${color},0.15)`;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Happy canvas: subtle ambient particles
+(function(){
+  const canvas = document.getElementById("happy-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+  const pts = Array.from({ length: 30 }, () => ({
+    x: Math.random() * w, y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15,
+  }));
+  function frame() {
+    ctx.fillStyle = "rgba(15,23,42,0.1)"; ctx.fillRect(0, 0, w, h);
+    pts.forEach((p) => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(56,189,248,0.15)"; ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Demo canvas: subtle ambient particles
+(function(){
+  const canvas = document.getElementById("demo-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w, h;
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener("resize", resize); resize();
+  const pts = Array.from({ length: 20 }, () => ({
+    x: Math.random() * w, y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+  }));
+  function frame() {
+    ctx.fillStyle = "rgba(13,27,42,0.1)"; ctx.fillRect(0, 0, w, h);
+    pts.forEach((p) => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,180,255,0.12)"; ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Fix for canvas resize on slide-enter (slide-engine.md § "캔버스 크기 버그")
+document.querySelectorAll("canvas.bg").forEach((c) => {
+  const slide = c.closest(".slide");
+  if (slide) {
+    slide.addEventListener("slide-enter", () => {
+      // These are fullscreen canvases using window.innerWidth/Height,
+      // but we re-read to be safe
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+    });
+  }
+});
+</script>
+</body>
+</html>

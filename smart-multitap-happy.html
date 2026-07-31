@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스마트 멀티탭 - 전력 절약</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f172a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif;
+    color: #fff;
+  }
+  .card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-radius: 32px;
+    padding: 40px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    text-align: center;
+    max-width: 780px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 20px;
+    background: #0a0f1a;
+    width: 700px;
+    height: 400px;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 6px;
+    color: #94a3b8;
+  }
+  h1 strong {
+    color: #38bdf8;
+    font-weight: 600;
+  }
+  .sub {
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 24px;
+  }
+  .footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 13px;
+    color: #334155;
+  }
+  .footer span { color: #38bdf8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1><strong>⚡ 홈즈AI</strong> 스마트 멀티탭</h1>
+  <div class="sub">대기전력을 차단하면? → 사람이 기분 좋아지는 마법</div>
+  <canvas id="c" width="700" height="400"></canvas>
+  <div class="footer">
+    <span>🔌</span> 사용 안 하는 가전 자동 OFF &nbsp;·&nbsp; <span>💰</span> 연간 최대 5만원 절약 &nbsp;·&nbsp; <span>😊</span> 기분은 덤
+  </div>
+</div>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const W = 700, H = 400;
+
+let phase = 0;
+let timer = 0;
+const states = [
+  { label: '외출했는데...', sub: '멀티탭을 안 껐다!', mood: '😰', plug: false, saved: 0 },
+  { label: '스마트 멀티탭이 감지!', sub: '사용자 없음 → 자동 차단', mood: '🤖', plug: true, saved: 0 },
+  { label: '대기전력 차단 중...', sub: '소비전력 0W ↓', mood: '⚡', plug: true, saved: 1 },
+  { label: '한 달 후...', sub: '전기요금이 줄었어요!', mood: '😊', plug: true, saved: 2 },
+  { label: '1년 후...', sub: '최대 5만원 절약 ☆', mood: '😆', plug: true, saved: 3 },
+];
+
+function drawScene(idx) {
+  const s = states[idx];
+  ctx.clearRect(0, 0, W, H);
+
+  // 배경
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0f1a');
+  grad.addColorStop(1, '#141b2d');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 방 바닥
+  ctx.fillStyle = '#1a2340';
+  ctx.fillRect(0, 280, W, 120);
+  ctx.strokeStyle = '#2a3350';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 280); ctx.lineTo(W, 280);
+  ctx.stroke();
+
+  // 벽 선
+  for (let i = 0; i < 12; i++) {
+    ctx.strokeStyle = '#ffffff04';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(i * 60, 0); ctx.lineTo(i * 60, 280);
+    ctx.stroke();
+  }
+
+  if (idx <= 1) {
+    // 켜진 가전
+    drawTV(200, 100, true);
+    drawLight(450, 80, true);
+    drawStandby(520, 250, true);
+  } else {
+    // 꺼진 가전
+    drawTV(200, 100, false);
+    drawLight(450, 80, false);
+    drawStandby(520, 250, false);
+  }
+
+  // 멀티탭
+  drawMultiTap(320, 250, s.plug);
+
+  // 사람
+  drawPerson(100, 160, s.mood, s.saved);
+
+  // 말풍선
+  drawBubble(340, 100, s.label, s.sub);
+
+  // 전력량 표시
+  drawPowerMeter(s.saved);
+}
+
+function drawTV(x, y, on) {
+  const bw = 120, bh = 70;
+  ctx.fillStyle = on ? '#1a2a3a' : '#111822';
+  ctx.strokeStyle = on ? '#4a6a8a' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, bw, bh, 6);
+  ctx.fill(); ctx.stroke();
+
+  // 화면
+  ctx.fillStyle = on ? '#3a8aff44' : '#0a0f1a';
+  ctx.fillRect(x + 8, y + 8, bw - 16, bh - 16);
+  if (on) {
+    ctx.fillStyle = '#3a8aff22';
+    ctx.fillRect(x + 10, y + 10, bw - 20, bh - 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px sans-serif';
+    ctx.fillText('📺', x + 48, y + 45);
+  }
+
+  // 받침대
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(x + 50, y + bh, 20, 15);
+  ctx.fillRect(x + 40, y + bh + 15, 40, 5);
+
+  // 전선
+  ctx.strokeStyle = on ? '#4a6a8a' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + bw/2, y + bh + 20);
+  ctx.quadraticCurveTo(x + bw/2 + 40, y + bh + 35, 380, 265);
+  ctx.stroke();
+}
+
+function drawLight(x, y, on) {
+  // 전구
+  ctx.beginPath();
+  ctx.arc(x, y, 35, 0, Math.PI * 2);
+  ctx.fillStyle = on ? '#ffd70022' : '#111822';
+  ctx.fill();
+  ctx.strokeStyle = on ? '#ffd70066' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 빛
+  if (on) {
+    const g = ctx.createRadialGradient(x, y, 10, x, y, 80);
+    g.addColorStop(0, '#ffd70015');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, 80, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd70088';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('💡', x - 13, y + 9);
+  } else {
+    ctx.fillStyle = '#33445588';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('💡', x - 13, y + 9);
+  }
+
+  // 전선
+  ctx.strokeStyle = on ? '#4a6a8a' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 20, y + 28);
+  ctx.quadraticCurveTo(x + 40, y + 80, W/2, 265);
+  ctx.stroke();
+}
+
+function drawStandby(x, y, on) {
+  ctx.fillStyle = on ? '#ff446622' : '#111822';
+  ctx.strokeStyle = on ? '#ff446644' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, 50, 40, 6);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = on ? '#ff446688' : '#33445588';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('🔴', x + 16, y + 28);
+
+  ctx.strokeStyle = on ? '#4a6a8a' : '#1a2a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 25, y + 40);
+  ctx.quadraticCurveTo(x + 25, y + 55, W/2, 265);
+  ctx.stroke();
+}
+
+function drawMultiTap(x, y, active) {
+  const w = 130, h = 36;
+  const r = 8;
+
+  // 본체
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, active ? '#2a4a6a' : '#1e2a3a');
+  g.addColorStop(1, active ? '#1a2a4a' : '#0f1a2a');
+  ctx.fillStyle = g;
+  ctx.strokeStyle = active ? '#38bdf866' : '#2a3a4a';
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fill(); ctx.stroke();
+
+  // LED
+  ctx.beginPath();
+  ctx.arc(x + 20, y + h/2, 5, 0, Math.PI * 2);
+  ctx.fillStyle = active ? '#22dd88' : '#ff4444';
+  ctx.fill();
+  if (active) {
+    const glow = ctx.createRadialGradient(x + 20, y + h/2, 2, x + 20, y + h/2, 15);
+    glow.addColorStop(0, '#22dd8844');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x + 20, y + h/2, 15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 콘센트 구멍
+  for (let i = 0; i < 3; i++) {
+    const cx = x + 50 + i * 28;
+    ctx.strokeStyle = active ? '#2a4a6a' : '#1a2a3a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - 6, y + 10, 12, 16);
+  }
+
+  // 전선 (멀티탭에서 왼쪽으로)
+  ctx.strokeStyle = '#2a3a4a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h/2);
+  ctx.quadraticCurveTo(x - 40, y + h/2 - 10, x - 60, y + h/2 + 10);
+  ctx.stroke();
+
+  // 상태 텍스트
+  ctx.fillStyle = active ? '#22dd88' : '#ff4444';
+  ctx.font = '9px system-ui';
+  ctx.fillText(active ? 'AUTO ON' : 'STANDBY', x + 30, y + h/2 + 3);
+}
+
+function drawPerson(x, y, mood, saved) {
+  const faceR = 30;
+
+  // 몸
+  ctx.fillStyle = '#1e2a3a';
+  roundRect(ctx, x - 18, y + 30, 36, 50, 10);
+  ctx.fill();
+
+  // 얼굴
+  ctx.beginPath();
+  ctx.arc(x, y, faceR, 0, Math.PI * 2);
+  ctx.fillStyle = '#f0d5a0';
+  ctx.fill();
+  ctx.strokeStyle = '#d4b080';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 눈
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(x - 10, y - 5, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 10, y - 5, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 입 (기분에 따라)
+  if (saved >= 2) {
+    // 활짝 웃음
+    ctx.strokeStyle = '#c07050';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y + 8, 12, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+    ctx.fillStyle = '#c07050';
+    ctx.beginPath();
+    ctx.arc(x, y + 8, 8, 0, Math.PI);
+    ctx.fill();
+  } else if (saved >= 1) {
+    // 미소
+    ctx.strokeStyle = '#c07050';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y + 6, 10, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  } else {
+    // 찡그림
+    ctx.strokeStyle = '#c07050';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y + 10, 8, Math.PI + 0.3, -0.3);
+    ctx.stroke();
+  }
+
+  // 머리카락
+  ctx.fillStyle = '#4a3a2a';
+  ctx.beginPath();
+  ctx.arc(x, y - 22, 24, Math.PI, 0);
+  ctx.fill();
+
+  // 이모지
+  ctx.font = '22px sans-serif';
+  ctx.fillText(mood, x + 35, y - 5);
+}
+
+function drawBubble(x, y, label, sub) {
+  const metrics = ctx.measureText(label);
+  const sw = Math.max(ctx.measureText(label).width, ctx.measureText(sub).width);
+  const bw = sw + 40;
+  const bh = 56;
+  const bx = x - bw/2;
+
+  ctx.fillStyle = '#1e2a4a';
+  ctx.strokeStyle = '#38bdf833';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, bx, y, bw, bh, 14);
+  ctx.fill(); ctx.stroke();
+
+  // 꼬리
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y + bh);
+  ctx.lineTo(x, y + bh + 12);
+  ctx.lineTo(x + 8, y + bh);
+  ctx.fillStyle = '#1e2a4a';
+  ctx.fill();
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 15px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x, y + 22);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px system-ui';
+  ctx.fillText(sub, x, y + 44);
+  ctx.textAlign = 'start';
+}
+
+function drawPowerMeter(saved) {
+  const x = 570, y = 310;
+
+  ctx.fillStyle = '#0f1a2a';
+  roundRect(ctx, x, y, 110, 70, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#2a3a5a';
+  ctx.lineWidth = 1;
+  roundRect(ctx, x, y, 110, 70, 10);
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '9px system-ui';
+  ctx.fillText('실시간 전력', x + 10, y + 16);
+
+  if (saved === 0) {
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 22px system-ui';
+    ctx.fillText('320W', x + 12, y + 52);
+    ctx.fillStyle = '#ef444444';
+    ctx.fillRect(x + 65, y + 32, 36, 28);
+  } else if (saved === 1) {
+    ctx.fillStyle = '#22dd88';
+    ctx.font = 'bold 22px system-ui';
+    ctx.fillText('0W', x + 18, y + 52);
+    ctx.fillStyle = '#22dd8844';
+    ctx.fillRect(x + 65, y + 32, 6, 28);
+  } else {
+    ctx.fillStyle = '#22dd88';
+    ctx.font = 'bold 22px system-ui';
+    ctx.fillText('0W', x + 18, y + 52);
+    ctx.fillStyle = '#22dd8844';
+    ctx.fillRect(x + 65, y + 32, 6, 28);
+
+    if (saved >= 2) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 16px system-ui';
+      ctx.fillText('💰', x + 80, y + 50);
+    }
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+let idx = 0;
+let frame = 0;
+
+function loop() {
+  frame++;
+  drawScene(idx);
+
+  if (frame % 150 === 0) {
+    idx = (idx + 1) % states.length;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
