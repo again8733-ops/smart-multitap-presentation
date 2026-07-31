@@ -168,8 +168,19 @@ canvas.bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z
 .demo-placeholder{border:2px dashed rgba(0,180,255,.3);border-radius:16px;padding:clamp(30px,5vh,60px) clamp(30px,6vw,80px);text-align:center;z-index:2}
 .demo-icon{font-size:clamp(40px,4vw,64px);margin-bottom:16px}
 .demo-placeholder p{font-size:clamp(14px,1.2vw,18px)!important;color:rgba(255,255,255,.5)!important;margin-bottom:20px}
-.demo-btn{display:inline-block;padding:clamp(10px,1.5vh,14px) clamp(24px,3vw,40px);font-size:clamp(16px,1.2vw,20px);font-weight:700;color:#fff;background:linear-gradient(135deg,#00d4ff,#0088cc);border:none;border-radius:30px;cursor:pointer;transition:transform .2s,box-shadow .2s;text-decoration:none}
+.demo-btn{display:inline-block;padding:clamp(10px,1.5vh,14px) clamp(24px,3vw,40px);font-size:clamp(16px,1.2vw,20px);font-weight:700;color:#fff;background:linear-gradient(135deg,#00d4ff,#0088cc);border:none;border-radius:30px;cursor:pointer;transition:transform .2s,box-shadow .2s;text-decoration:none;font-family:inherit}
 .demo-btn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(0,180,255,.4)}
+.demo-placeholder.hidden{display:none}
+.demo-split{display:none;width:clamp(320px,86%,1200px);flex-direction:column;gap:10px;z-index:2}
+.demo-split.visible{display:flex}
+.demo-row{display:flex;gap:clamp(8px,1vw,14px);height:clamp(260px,58vh,600px)}
+.demo-panel{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.demo-panel-label{display:flex;align-items:center;gap:6px;font-size:clamp(11px,.9vw,14px);font-weight:700;color:rgba(255,255,255,.85)}
+.demo-dot{width:8px;height:8px;border-radius:50%;background:#ff4444;box-shadow:0 0 8px rgba(255,68,68,.8);animation:blink 1s steps(2,start) infinite}
+@keyframes blink{to{visibility:hidden}}
+.demo-panel iframe{flex:1;width:100%;border:none;border-radius:12px;border:1px solid rgba(0,180,255,.25);background:#000}
+.demo-close-btn{align-self:center;padding:8px 24px;font-size:clamp(13px,1vw,16px);font-weight:700;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:20px;cursor:pointer;z-index:3;box-shadow:0 4px 16px rgba(239,68,68,.35);font-family:inherit}
+.demo-close-btn:hover{transform:scale(1.05)}
 
 /* Spectacle fx */
 .slide.shake{animation:shakeKey .22s linear}
@@ -195,6 +206,7 @@ mark.kw.gold{background:#ffd700;color:#0a0a0f}
   .invest-grid{flex-wrap:wrap}
   .invest-card{min-width:140px}
   .sh-flow{flex-wrap:wrap;justify-content:center}
+  .demo-row{flex-direction:column}
 }
 @media(max-width:480px){
   .stack-type{font-size:clamp(22px,8vw,36px)}
@@ -452,10 +464,23 @@ mark.kw.gold{background:#ffd700;color:#0a0a0f}
   <section class="slide slide-demo" data-index="8">
     <canvas class="bg" id="demo-canvas"></canvas>
     <h2 data-anim="up">스마트 멀티탭 동작 확인</h2>
-    <div class="demo-placeholder" data-anim="up">
+    <div class="demo-placeholder" id="demo-placeholder" data-anim="up">
       <div class="demo-icon">🎥</div>
-      <p>아래 버튼을 클릭하여 동작 확인 영상 보기</p>
-      <a href="https://again8733-ops.github.io/makerton-live-relay/" target="_blank" class="demo-btn" data-no-advance>▶ 동작 확인하기</a>
+      <p>아래 버튼을 클릭하면 실시간 시연 영상과 얼굴 인식 화면을 동시에 볼 수 있습니다</p>
+      <button class="demo-btn" onclick="toggleDemo()" data-no-advance>▶ 동작 확인하기</button>
+    </div>
+    <div class="demo-split" id="demo-split">
+      <div class="demo-row">
+        <div class="demo-panel">
+          <div class="demo-panel-label"><span class="demo-dot"></span> 실시간 시연 영상</div>
+          <iframe id="demo-frame-live" src="https://again8733-ops.github.io/makerton-live-relay/" title="실시간 시연 영상"></iframe>
+        </div>
+        <div class="demo-panel">
+          <div class="demo-panel-label"><span class="demo-dot"></span> 얼굴 인식 화면</div>
+          <iframe id="demo-frame-face" src="https://face-bomc.vercel.app/" title="얼굴 인식 화면"></iframe>
+        </div>
+      </div>
+      <button class="demo-close-btn" onclick="toggleDemo()" data-no-advance>■ 닫기</button>
     </div>
   </section>
 </div>
@@ -491,6 +516,15 @@ mark.kw.gold{background:#ffd700;color:#0a0a0f}
     if (frame && current !== 7) {
       frame.classList.remove("visible");
       if (btn) { btn.textContent = "▶ 시뮬레이션 보기"; btn.classList.remove("active"); }
+    }
+
+    const demoPh = document.getElementById("demo-placeholder");
+    const demoSplit = document.getElementById("demo-split");
+    if (demoPh && demoSplit && current !== 8) {
+      demoSplit.classList.remove("visible");
+      demoPh.classList.remove("hidden");
+      const openBtn = demoPh.querySelector(".demo-btn");
+      if (openBtn) openBtn.textContent = "▶ 동작 확인하기";
     }
   }
 
@@ -531,6 +565,17 @@ function toggleSimulation() {
     btn.textContent = "■ 시뮬레이션 닫기";
     btn.classList.add("active");
   }
+}
+
+function toggleDemo() {
+  const ph = document.getElementById("demo-placeholder");
+  const split = document.getElementById("demo-split");
+  if (!ph || !split) return;
+  const opening = !split.classList.contains("visible");
+  split.classList.toggle("visible", opening);
+  ph.classList.toggle("hidden", opening);
+  const openBtn = ph.querySelector(".demo-btn");
+  if (openBtn) openBtn.textContent = opening ? "■ 닫기" : "▶ 동작 확인하기";
 }
 </script>
 
